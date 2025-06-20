@@ -1,29 +1,37 @@
-import importlib.util
+#!/usr/bin/env python
+
+import argparse
 import os
+import subprocess
 import sys
 
-# Config
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TARGET_MAIN = os.path.join(BASE_DIR, "Neo", "main.py")
+NEO_MAIN = os.path.join(BASE_DIR, "Neo", "main.py")
 
-def main():
-    if not os.path.exists(TARGET_MAIN):
-        print(f"Error: Neo/main.py not found at {TARGET_MAIN}")
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run Neo from a specific Git branch.")
+    parser.add_argument("-b", "--branch", type=str, help="Git branch to checkout before running Neo")
+    args, remaining = parser.parse_known_args()
+    return args, remaining
+
+def checkout_branch(branch):
+    try:
+        print(f"Checking out branch: {branch}")
+        subprocess.run(["git", "checkout", branch], cwd=BASE_DIR, check=True)
+    except subprocess.CalledProcessError:
+        print(f"Error: Failed to checkout branch '{branch}'.")
         sys.exit(1)
 
-    print(f"Running: {TARGET_MAIN}")
-    print(f"Args: {sys.argv[1:]}")
+def run_main(args):
+    cmd = [sys.executable, NEO_MAIN] + args
+    print(f"Running: {' '.join(cmd)}")
+    subprocess.run(cmd)
 
-    sys.argv = [TARGET_MAIN] + sys.argv[1:]
-
-    spec = importlib.util.spec_from_file_location("neo_main", TARGET_MAIN)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-
-    if hasattr(module, "main") and callable(module.main):
-        module.main()
-    else:
-        print("Warning: No 'main' function found. Execution complete.")
+def main():
+    args, extra = parse_args()
+    if args.branch:
+        checkout_branch(args.branch)
+    run_main(extra)
 
 if __name__ == "__main__":
     main()
