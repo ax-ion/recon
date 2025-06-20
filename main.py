@@ -32,6 +32,7 @@ def main():
     if args.branch:
         checkout_branch(args.branch)
     run_main(extra)
+    checkout_branch("master")
 
 if __name__ == "__main__":
     main()
