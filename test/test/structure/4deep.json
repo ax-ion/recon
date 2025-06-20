@@ -1,0 +1,48 @@
+{
+  "projects": [
+    {
+      "project_id": "P001",
+      "name": "Project Alpha",
+      "tasks": [
+        {
+          "task_id": "T001",
+          "status": "completed",
+          "assignee": {
+            "id": "A001",
+            "name": "John"
+          }
+        },
+        {
+          "task_id": "T002",
+          "status": "in_progress",
+          "assignee": {
+            "id": "A002",
+            "name": "Jane"
+          }
+        }
+      ]
+    },
+    {
+      "project_id": "P002",
+      "name": "Project Beta",
+      "tasks": [
+        {
+          "task_id": "T003",
+          "status": "completed",
+          "assignee": {
+            "id": "A001",
+            "name": "John"
+          }
+        },
+        {
+          "task_id": "T004",
+          "status": "in_progress",
+          "assignee": {
+            "id": "A002",
+            "name": "Jane"
+          }
+        }
+      ]
+    }
+  ]
+}

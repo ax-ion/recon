@@ -1,0 +1,26 @@
+{
+  "data": [
+    {
+      "id": "1",
+      "attributes": {
+        "key1": "value1",
+        "key2": "value2",
+        "nested": {
+          "nkey1": "nvalue1",
+          "nkey2": "nvalue2"
+        }
+      }
+    },
+    {
+      "id": "2",
+      "attributes": {
+        "key1": "value1",
+        "key2": "value2",
+        "nested": {
+          "nkey1": "nvalue1",
+          "nkey2": "nvalue2"
+        }
+      }
+    }
+  ]
+}
