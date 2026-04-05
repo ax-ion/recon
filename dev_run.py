@@ -7,11 +7,11 @@ import subprocess
 import sys
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-NEO_MAIN = os.path.join(BASE_DIR, "main.py")
+RECON_MAIN = os.path.join(BASE_DIR, "main.py")
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run Recon from a specific Git branch.")
-    parser.add_argument("-b", "--branch", type=str, help="Git branch to checkout before running Neo")
+    parser.add_argument("-b", "--branch", type=str, help="Git branch to checkout before running Recon")
     args, remaining = parser.parse_known_args()
     return args, remaining
 
@@ -24,7 +24,7 @@ def checkout_branch(branch):
         sys.exit(1)
 
 def run_main(args):
-    cmd = [sys.executable, NEO_MAIN] + args
+    cmd = [sys.executable, RECON_MAIN] + args
     print(f"🚀 Running: {' '.join(cmd)}")
     subprocess.run(cmd)
 

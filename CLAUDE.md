@@ -30,7 +30,7 @@ python dev_run.py -b feature-branch [main.py flags]
 # Shell launchers (wrappers around main.py)
 ./launch           # bash
 ./launch.bat       # Windows CMD
-./run_docgen.sh    # bash (minimal)
+./run_recon.sh     # bash (minimal)
 ```
 
 The tool runs in the **current working directory** (not its own directory). Output is `project_structure_{timestamp}.md` in cwd.
