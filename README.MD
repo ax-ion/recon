@@ -1,39 +1,35 @@
+# Recon
 
-# Traceframe
+Reconnaissance on your codebase. Fast docs, directory trees, and project maps built for AI.
 
-A fast and customizable documentation + directory tree generator for Python projects.
+## What It Does
 
-## 🔍 What It Does
+Recon scans your project directory and generates:
 
-Traceframe scans your project directory and generates:
+- Clean Markdown documentation from all readable source files
+- A visual, structured directory tree of your codebase
+- Masked sensitive data (`.env` values, API keys, passwords)
+- Smart exclusion rules for noise-free output
+- Clipboard-ready output for pasting into AI conversations
 
-- 📄 Clean Markdown documentation from all readable source files
-- 🌲 A visual, structured directory tree of your codebase
-- 🧼 Masked sensitive data (e.g., `.env`, `api_key`, `password`)
-- 🔍 Explicit targeting of specific files/folders
-- 🔁 Smart exclusion rules for noise-free output
-- 📝 A UTF‑8 log file with every run
-
-## 🚀 Usage
-
-Run with:
+## Usage
 
 ```bash
-traceframe -s src,utils --no-clipboard
+recon                              # full docs + tree
+recon --fast                       # tree only
+recon -s src,utils                 # specific paths only
+recon -f path/to/file.py           # single file
+recon --auto-deps app.py           # follow Python imports
+recon -o out.md --no-clipboard     # custom output, skip clipboard
+recon -x migrations,venv           # exclude by name
+recon --debug                      # verbose logging
 ```
 
-Options include:
+## Why Recon?
 
-- `--specific`: Process only listed paths
-- `--exclude`: Skip noisy folders like `.git`, `__pycache__`, etc.
-- `--no-delete`: Keep old logs/docs
-- `--debug`: See internal operations in terminal
-
-## 💡 Why Use Traceframe?
-
-- Stop bloated doc generation
-- Focus only on what matters
-- Rapidly visualize, document, and share your codebase
+- Distill your codebase into something an AI can actually use
+- No bloat — only the files that matter
+- Secrets stay secret
 
 ---
 

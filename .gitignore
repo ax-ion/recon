@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+*.log
+project_structure_*.md
+recon_profile.csv
+*.egg-info/
+dist/
+build/

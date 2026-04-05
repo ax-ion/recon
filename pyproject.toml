@@ -1,3 +1,10 @@
 # pyproject.toml
+[project]
+name = "recon"
+version = "1.0.0"
+description = "Reconnaissance on your codebase — docs, directory trees, and project maps for AI"
+requires-python = ">=3.10"
+dependencies = ["pyperclip"]
+
 [project.scripts]
-docgen = "docgen_launcher:main"
+recon = "main:main"

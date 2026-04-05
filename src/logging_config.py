@@ -1,25 +1,34 @@
-"""
-Traceframe – logging_config.py
-UTF‑8 file logging; console output only when --debug is used.
-"""
-import logging, os, sys, ctypes
+import logging
+import os
+import sys
+import ctypes
 from datetime import datetime
+from io import TextIOWrapper
+from typing import cast
+
 
 def _ensure_utf8_streams() -> None:
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
-        sys.stderr.reconfigure(encoding="utf-8", errors="backslashreplace")
-    except AttributeError:                           # < Python 3.7
+        stdout = cast(TextIOWrapper, sys.stdout)
+        stderr = cast(TextIOWrapper, sys.stderr)
+        stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
+        stderr.reconfigure(encoding="utf-8", errors="backslashreplace")
+    except (AttributeError, ValueError):
         if os.name == "nt":
-            ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+            try:
+                ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+            except Exception:
+                pass
         os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
-def configure_logging(debug: bool = False, log_to_file: bool = False) -> None:
-    """Configure logging for the application."""
-    _ensure_utf8_streams()
-    log_level = logging.DEBUG if debug else logging.INFO
-    handlers = [logging.StreamHandler()]
 
+def configure_logging(debug: bool = False, log_to_file: bool = False) -> None:
+    _ensure_utf8_streams()
+
+    log_level = logging.DEBUG if debug else logging.INFO
+    handlers: list[logging.Handler] = [logging.StreamHandler()]
+
+    log_file: str | None = None
     if log_to_file:
         log_file = os.path.join(os.getcwd(), f"application_{datetime.now():%Y-%m-%d}.log")
         handlers.append(logging.FileHandler(log_file, mode="w", encoding="utf-8"))

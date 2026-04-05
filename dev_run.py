@@ -10,7 +10,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 NEO_MAIN = os.path.join(BASE_DIR, "main.py")
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Run Neo from a specific Git branch.")
+    parser = argparse.ArgumentParser(description="Run Recon from a specific Git branch.")
     parser.add_argument("-b", "--branch", type=str, help="Git branch to checkout before running Neo")
     args, remaining = parser.parse_known_args()
     return args, remaining
