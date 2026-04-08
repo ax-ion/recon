@@ -1,0 +1,15 @@
+# Manual identity annotations for files that can't self-describe.
+# Used by --manifest to fill in "Files Without Identity".
+
+.env: Local environment variables (not committed — in .gitignore)
+launch: Bash launcher script — resolves recon's directory and runs main.py
+launch.bat: Windows CMD equivalent of the launch script
+requirements.txt: Python dependencies — pyperclip (clipboard), PyMuPDF optional (PDF redaction)
+run_recon.sh: Minimal bash wrapper — runs main.py with forwarded arguments
+pyproject.toml: Python project metadata — name, version, description
+src/logging_config.py: UTF-8 logging setup with Windows console encoding fix via ctypes
+src/config.py: All exclusion sets, binary extensions, sensitive keys, language map, normalize_exclusions()
+.claude/settings.local.json: Claude Code local permission rules for this project (not committed)
+
+CLAUDE.md: Project instructions for Claude Code — architecture, CLI usage, design decisions
+dev_run.py: Dev launcher — checks out a git branch, runs main.py, returns to master

@@ -297,6 +297,29 @@ def _iter_all_files(
     return results
 
 
+# ── sidecar identity loader ─────────────────────────────────────────
+
+def _load_sidecar_identities(directory: str) -> dict[str, str]:
+    """Load .recon/identities.yaml — simple 'path: description' format."""
+    sidecar = Path(directory) / ".recon" / "identities.yaml"
+    if not sidecar.is_file():
+        return {}
+
+    identities: dict[str, str] = {}
+    try:
+        for line in sidecar.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if ":" not in line:
+                continue
+            key, _, value = line.partition(":")
+            identities[key.strip()] = value.strip()
+    except Exception:
+        logging.warning("[recon] Failed to read %s", sidecar)
+    return identities
+
+
 # ── main entry point ────────────────────────────────────────────────
 
 def generate_manifest(
@@ -341,6 +364,9 @@ def generate_manifest(
     if status_cb:
         status_cb("walk", total)
 
+    # Load sidecar identities for files that can't self-describe
+    sidecar = _load_sidecar_identities(directory)
+
     # Collect entries grouped by extraction method
     entries: list[tuple[str, str, str | None]] = []  # (rel, method, content)
 
@@ -349,6 +375,12 @@ def generate_manifest(
             status_cb("read", (idx, total))
         rel = os.path.relpath(path, directory).replace(os.sep, "/")
         method, content = _extract_identity(path)
+
+        # Sidecar fallback for files with no auto-extracted identity
+        if not content and rel in sidecar:
+            method = "sidecar"
+            content = sidecar[rel]
+
         entries.append((rel, method, content))
 
     if status_cb:
@@ -383,3 +415,87 @@ def generate_manifest(
             md.write("\n")
 
     logging.info("Manifest saved → %s", output_filepath)
+
+
+def scaffold_identities(
+    directory: str,
+    *,
+    exclude_tests: bool = False,
+    user_excludes: Iterable[str] | None = None,
+    only: str | None = None,
+    status_cb: Callable[[str, Any], None] | None = None,
+) -> str:
+    """Generate or update .recon/identities.yaml with placeholder entries
+    for every file that has no auto-extracted identity.
+
+    Returns the path to the identities.yaml file.
+    """
+    # Build exclusions
+    dirs = list(DEFAULT_EXCLUDED_DIRECTORIES)
+    files = list(DEFAULT_EXCLUDED_FILES)
+    patterns = list(DEFAULT_EXCLUDED_FILE_PATTERNS)
+    types = set(DEFAULT_EXCLUDED_FILE_TYPES)
+
+    if exclude_tests:
+        patterns.append("*_test.*")
+    if user_excludes:
+        dirs += [os.path.basename(p.strip("/\\")) for p in user_excludes]
+        files += [os.path.basename(p.strip("/\\")) for p in user_excludes]
+
+    excluded_dirs, excluded_files, compiled_patterns = normalize_exclusions(dirs, files, patterns)
+
+    roots: list[Path] = []
+    if only:
+        for p in (s.strip() for s in only.split(",")):
+            ab = Path(p).expanduser()
+            try:
+                roots.append(ab.resolve(strict=True))
+            except FileNotFoundError:
+                logging.warning("[recon] Skipping missing path: %s", ab)
+    if not roots:
+        roots = [Path(directory)]
+
+    all_files = _iter_all_files(
+        list(roots), excluded_dirs, excluded_files, types, compiled_patterns
+    )
+    if status_cb:
+        status_cb("walk", len(all_files))
+
+    # Load existing sidecar to preserve entries already written
+    existing = _load_sidecar_identities(directory)
+
+    # Find files with no identity from any source
+    missing: list[str] = []
+    for idx, path in enumerate(all_files, 1):
+        if status_cb:
+            status_cb("read", (idx, len(all_files)))
+        rel = os.path.relpath(path, directory).replace(os.sep, "/")
+        _, content = _extract_identity(path)
+        if not content and rel not in existing:
+            missing.append(rel)
+
+    # Write the identities.yaml
+    recon_dir = Path(directory) / ".recon"
+    recon_dir.mkdir(exist_ok=True)
+    sidecar_path = recon_dir / "identities.yaml"
+
+    lines: list[str] = []
+
+    # Preserve existing file content
+    if sidecar_path.is_file():
+        lines.append(sidecar_path.read_text(encoding="utf-8").rstrip("\n"))
+        lines.append("")
+
+    if missing:
+        lines.append(f"# --- {len(missing)} files need identity (scaffolded by recon) ---")
+        for rel in sorted(missing):
+            lines.append(f"{rel}: TODO")
+        lines.append("")
+
+    sidecar_path.write_text("\n".join(lines), encoding="utf-8")
+
+    if status_cb:
+        status_cb("write", None)
+
+    logging.info("Scaffolded %d entries → %s", len(missing), sidecar_path)
+    return str(sidecar_path)

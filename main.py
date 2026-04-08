@@ -29,7 +29,7 @@ from src.config import (DIRECTORIES_TO_DELETE, DOCUMENTATION_FILENAME,
                         FILES_TO_DELETE)
 from src.documentation import generate_documentation
 from src.file_operations import delete_old_files, fuzzy_find
-from src.manifest import generate_manifest
+from src.manifest import generate_manifest, scaffold_identities
 from src.logging_config import configure_logging
 
 
@@ -56,7 +56,9 @@ def _cli() -> argparse.Namespace:
     p.add_argument("--no-clipboard", action="store_true",
                    help="skip copying output to clipboard")
     p.add_argument("--manifest", action="store_true",
-                   help="extract frontmatter (.md) and docstrings (.py) into a manifest")
+                   help="extract file identity (frontmatter, docstrings, comments) into a manifest")
+    p.add_argument("--scaffold", action="store_true",
+                   help="generate .recon/identities.yaml with TODO entries for files lacking identity")
     p.add_argument("--fast",    action="store_true",
                    help="tree‑only mode (skip file contents)")
     p.add_argument("--profile", action="store_true",
@@ -156,7 +158,17 @@ def main() -> None:
         if args.debug:
             print("🧭 Specific Paths Used:", specific_paths or ["<entire directory>"])
 
-        if args.manifest:
+        if args.scaffold:
+            sidecar_path = scaffold_identities(
+                directory=os.getcwd(),
+                exclude_tests=not args.with_test,
+                user_excludes=(args.exclude.split(",") if args.exclude else []),
+                only=",".join(specific_paths) if specific_paths else None,
+                status_cb=_status_cb,
+            )
+            print(f"\n📝  Scaffolded → {sidecar_path}")
+            print("    Fill in the TODO entries, then run --manifest to see the result.")
+        elif args.manifest:
             generate_manifest(
                 directory=os.getcwd(),
                 output_filepath=output_md,
