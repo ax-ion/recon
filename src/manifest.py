@@ -300,21 +300,57 @@ def _iter_all_files(
 # ── sidecar identity loader ─────────────────────────────────────────
 
 def _load_sidecar_identities(directory: str) -> dict[str, str]:
-    """Load .recon/identities.yaml — simple 'path: description' format."""
+    """Load .recon/identities.yaml.
+
+    Supports two formats:
+      Simple:   path/to/file: description on same line
+      Nested:   "path/to/file":
+                  identity: "description"
+                  status: optional extra metadata (ignored)
+    """
     sidecar = Path(directory) / ".recon" / "identities.yaml"
     if not sidecar.is_file():
         return {}
 
     identities: dict[str, str] = {}
     try:
-        for line in sidecar.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line or line.startswith("#"):
+        lines = sidecar.read_text(encoding="utf-8").splitlines()
+        i = 0
+        while i < len(lines):
+            raw = lines[i]
+            stripped = raw.strip()
+            i += 1
+
+            if not stripped or stripped.startswith("#"):
                 continue
-            if ":" not in line:
+            if ":" not in stripped:
                 continue
-            key, _, value = line.partition(":")
-            identities[key.strip()] = value.strip()
+
+            key, _, value = stripped.partition(":")
+            key = key.strip().strip('"').strip("'")
+            value = value.strip().strip('"').strip("'")
+
+            if not key:
+                continue
+
+            # Simple format: key has a value on the same line
+            if value:
+                identities[key] = value
+                continue
+
+            # Nested format: value is empty, look for indented "identity:" line
+            while i < len(lines):
+                child = lines[i]
+                if not child or not child[0].isspace():
+                    break  # not indented — next top-level entry
+                child_stripped = child.strip()
+                if child_stripped.startswith("identity:"):
+                    _, _, desc = child_stripped.partition(":")
+                    desc = desc.strip().strip('"').strip("'")
+                    if desc:
+                        identities[key] = desc
+                i += 1
+
     except Exception:
         logging.warning("[recon] Failed to read %s", sidecar)
     return identities
@@ -474,16 +510,44 @@ def scaffold_identities(
         if not content and rel not in existing:
             missing.append(rel)
 
-    # Write the identities.yaml
+    # Write the identities.yaml — always append, never overwrite
     recon_dir = Path(directory) / ".recon"
     recon_dir.mkdir(exist_ok=True)
     sidecar_path = recon_dir / "identities.yaml"
 
+    is_new = not sidecar_path.is_file()
+
+    if not missing and not is_new:
+        logging.info("No new files need identity — %s unchanged", sidecar_path)
+        return str(sidecar_path)
+
     lines: list[str] = []
 
+    # New file — write instructions header
+    if is_new:
+        lines.append("# .recon/identities.yaml — File identity sidecar")
+        lines.append("#")
+        lines.append("# This file provides descriptions for files that can't self-describe")
+        lines.append("# (JSON, CSV, .env, extensionless scripts, binary configs, etc.).")
+        lines.append("#")
+        lines.append("# How to use:")
+        lines.append("#   1. Replace TODO with a short description of what the file is/does")
+        lines.append("#   2. Run: python main.py --manifest --no-clipboard")
+        lines.append("#      to verify all files have identity")
+        lines.append("#   3. Re-run --scaffold anytime to pick up newly added files")
+        lines.append("#      (existing entries are never overwritten)")
+        lines.append("#")
+        lines.append("# Supported formats:")
+        lines.append("#   Simple:  path/to/file.json: Description of the file")
+        lines.append("#   Nested:  \"path/to/file.json\":")
+        lines.append("#              identity: \"Description of the file\"")
+        lines.append("#")
+        lines.append("")
+
     # Preserve existing file content
-    if sidecar_path.is_file():
-        lines.append(sidecar_path.read_text(encoding="utf-8").rstrip("\n"))
+    if not is_new:
+        existing_text = sidecar_path.read_text(encoding="utf-8").rstrip("\n")
+        lines.append(existing_text)
         lines.append("")
 
     if missing:
